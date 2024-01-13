@@ -6,7 +6,7 @@ import { getAll } from './getAll';
 const server = createServer();
 
 server.on('request', async (req, res) => {
-    // @ts-ignore
+    if (!req.url) return;
     const reqUrl = url.parse(req.url).pathname;
 
     switch (reqUrl) {

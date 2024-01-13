@@ -2,7 +2,7 @@ import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { User } from './types';
 
-type TestUser = Pick<User, 'id' | 'first_name'>;
+export type TestUser = Pick<User, 'id' | 'first_name'>;
 
 const file = fs.createWriteStream('./huge.json');
 const NUMBER_OF_USERS = 1e6;
