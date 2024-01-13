@@ -3,7 +3,7 @@ import { User } from './types';
 
 type TransformCallback = (error?: Error | null, data?: any) => void;
 
-class UserTransform extends Transform {
+export class UserTransform extends Transform {
     accumulatedData: User[];
     constructor() {
         super({
@@ -14,7 +14,7 @@ class UserTransform extends Transform {
         this.accumulatedData = [];
     }
 
-    _transform(chunk: any, _enc: string, callback: TransformCallback) {
+    _transform(chunk: User[], _enc: string, callback: TransformCallback) {
         for (const user of chunk) {
             user.first_name = user.first_name.toUpperCase();
             this.accumulatedData.push(user);
@@ -27,11 +27,4 @@ class UserTransform extends Transform {
         this.push(finalData);
         callback();
     }
-
-    reset() {
-        this.accumulatedData = [];
-    }
 }
-
-
-export const usersStream = new UserTransform();

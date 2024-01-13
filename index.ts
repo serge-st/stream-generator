@@ -1,21 +1,23 @@
 import { createServer } from 'http';
-import { usersStream } from './stream';
-import { getAllUsers } from './usersGenerator';
+import url from "url";
+import { getAllInOneArray } from './getAllInOneArray';
+import { getAll } from './getAll';
 
 const server = createServer();
 
-server.on('request', async (_req, res) => {
-    const users = getAllUsers();
-    for await (const chunk of users) {
-        usersStream.write(chunk);
-    }
-    usersStream.end();
+server.on('request', async (req, res) => {
+    // @ts-ignore
+    const reqUrl = url.parse(req.url).pathname;
 
-    usersStream.pipe(res);
-    // TODO: fix reset
-    res.on('finish', () => {
-        usersStream.reset();
-    });
+    switch (reqUrl) {
+        case '/t': {
+            getAll(res);
+            break;
+        }
+        default: {
+            getAllInOneArray(res);
+        }
+    }
 });
 
 server.listen(8000);
