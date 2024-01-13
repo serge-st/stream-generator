@@ -13,7 +13,7 @@ for (let i = 0; i <= NUMBER_OF_USERS; i++) {
     }
 
     const user: TestUser = {
-        id: i,
+        id: i + 1,
         first_name: uuid()
     };
 
