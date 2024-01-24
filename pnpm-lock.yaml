@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@json2csv/node':
+    specifier: ^7.0.5
+    version: 7.0.5
   axios:
     specifier: ^1.6.5
     version: 1.6.5
@@ -24,6 +27,27 @@ devDependencies:
     version: 9.0.1
 
 packages:
+
+  /@json2csv/formatters@7.0.5:
+    resolution: {integrity: sha512-ihONIB8S1ZG0ji5nDFpfCUPphVLnEKlLxDmDqRMjmPhzw8WCvyLX2trIrNHCf1t2IV8rx+1tNYaDb1dh87jHgA==}
+    dev: false
+
+  /@json2csv/node@7.0.5:
+    resolution: {integrity: sha512-dOp2yHW8gDmIaGYUMEjhxZsMXld1hdvMLpgNdAOGJYqOrEMkGXbxZD3LF6hBJQnHsIZWsiWzLk4itFmvp/ZF7w==}
+    dependencies:
+      '@json2csv/plainjs': 7.0.5
+    dev: false
+
+  /@json2csv/plainjs@7.0.5:
+    resolution: {integrity: sha512-iJsYEzgRZUhRb8LltCeuBQyexQVUbovRZFF73Lo0iIvi5SUWsfXGTtbriIROsOKgfZPtYxmkZV+FYlsnBu9ybQ==}
+    dependencies:
+      '@json2csv/formatters': 7.0.5
+      '@streamparser/json': 0.0.19
+    dev: false
+
+  /@streamparser/json@0.0.19:
+    resolution: {integrity: sha512-VTxtZGME6ZSWNCSjZ0Zd2LNNodx62XvmARb/liHIwGlInuuvoDzioLuRP8ajV8iLBknsTrsqpRDGlvzKSzpNEw==}
+    dev: false
 
   /@types/node@20.11.0:
     resolution: {integrity: sha512-o9bjXmDNcF7GbM4CNQpmi+TutCgap/K3w1JyKgxAjqx41zp9qlIAVFi0IhCNsJcXolEqLWhbFbEeL0PvYm4pcQ==}

@@ -1,7 +1,8 @@
 import { createServer } from 'http';
 import url from "url";
 import { paginateData } from './paginationAPI';
-import users from './huge.json';
+// import users from './huge.json';
+import smallUsers from './small.json';
 import { TestUser } from './createHugeJSON';
 
 const server = createServer();
@@ -16,7 +17,7 @@ server.on('request', async (req, res) => {
         case '/test-data': {
             const page = query.page ? parseInt(query.page as string, 10) : 1;
 
-            const response = paginateData(users as TestUser[], page);
+            const response = paginateData(smallUsers as TestUser[], page);
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(response, null, 2));
             break;
