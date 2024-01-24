@@ -21,7 +21,7 @@ export async function getAll(res: ServerResponse) {
     }`
     const script = new Script(`(${code})(data)`);
 
-    const highWaterMark = 100;
+    const highWaterMark = 200;
 
     const usersStream = new Transform({
         objectMode: true,
@@ -40,8 +40,10 @@ export async function getAll(res: ServerResponse) {
             callback()
         },
     });
-    const users = getAllUsers();
     const parser = new J2CTransform({ header: true }, {}, { objectMode: true });
+    usersStream.pipe(parser).pipe(res);
+
+    const users = getAllUsers();
 
     let waitingForDrain = false;
     let shouldContinue = true;
@@ -49,14 +51,14 @@ export async function getAll(res: ServerResponse) {
         shouldContinue = usersStream.write(chunk);
         if (!shouldContinue && !waitingForDrain) {
             waitingForDrain = true;
-            console.log('waiting for drain');
+            console.log('waiting for drain'); // prints out only when highWaterMark is 1
             await new Promise<void>(resolve => usersStream.once('drain', () => {
                 waitingForDrain = false;
+                console.log('drained'); // prints out only when highWaterMark is 1
                 resolve();
             }));
         }
     }
 
     usersStream.end();
-    usersStream.pipe(parser).pipe(res);
 }
