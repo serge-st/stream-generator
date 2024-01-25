@@ -27,19 +27,41 @@ export async function getAll(res: ServerResponse) {
         objectMode: true,
         highWaterMark,
         transform(chunk: User[], _enc, callback) {
-            chunk.forEach(user => {
-                const result = script.runInNewContext({ data: user });
-                if (result.constructor.name === 'Array') {
-                    result.forEach((item: any) => this.push(item));
-                    // result.forEach((item: any) => this.push(JSON.stringify(item)));
-                } else {
-                    this.push(user);
-                    // this.push(JSON.stringify(user));
-                }
-            });
-            callback()
+            try {
+                chunk.forEach(user => {
+                    const result = script.runInNewContext({ data: user });
+                    if (result.constructor.name === 'Array') {
+                        result.forEach((item: any) => this.push(item));
+                    } else {
+                        this.push(result);
+                    }
+                });
+                callback()
+            } catch (error) {
+                callback(error as Error);
+            }
         },
     });
+
+    // * All events are usually emitted in the following order:
+    // Resume - stream started
+    usersStream.on('resume', () => console.log(`stream started`));
+    // Data - every peace of data pushed from the transoform callback
+    usersStream.on('data', (chunk) => console.log(`data: ${JSON.stringify(chunk)}`));
+    // End - this event is emitted when there is no more data to be consumed from the stream.
+    // For a Readable stream, it signals that the stream has been completely read.
+    usersStream.on('end', () => console.log(`stream ended`));
+    // Finish - this event is emitted after the stream.end() method has been called
+    // and all data has been flushed to the underlying system.
+    // This is relevant for Writable streams.
+    // It signals that all the data has been supplied to the stream (using the write() method) and the stream is done writing it.
+    usersStream.on('finish', () => console.log(`stream finished`));
+    // Close - this event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed. 
+    // The event indicates that no more events will be emitted, and no further computation will occur.
+    usersStream.on('close', () => console.log(`stream closed`));
+    // Error - this event is emitted whenever an error is passed to stream callback as first argument.
+    usersStream.on('error', (error: unknown) => console.log(`error: ${error}`));
+
     const parser = new J2CTransform({ header: true }, {}, { objectMode: true });
     usersStream.pipe(parser).pipe(res);
 
