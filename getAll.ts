@@ -22,11 +22,19 @@ export async function getAll(res: ServerResponse) {
     const script = new Script(`(${code})(data)`);
 
     const highWaterMark = 200;
+    let processedChunks = 0;
+
+    const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     const usersStream = new Transform({
         objectMode: true,
         highWaterMark,
-        transform(chunk: User[], _enc, callback) {
+        async transform(chunk: User[], _enc, callback) {
+            // You can emit custom events from the stream
+            // and then listen to them in the main thread with stream.on('starting-stream', () => console.log('starting stream'))
+            if (processedChunks === 0) this.emit('starting-stream')
+            await wait(1000);
+            console.log('transforming chunk')
             try {
                 chunk.forEach(user => {
                     const result = script.runInNewContext({ data: user });
@@ -36,6 +44,7 @@ export async function getAll(res: ServerResponse) {
                         this.push(result);
                     }
                 });
+                processedChunks++;
                 callback()
             } catch (error) {
                 callback(error as Error);
@@ -46,11 +55,16 @@ export async function getAll(res: ServerResponse) {
     // * All events are usually emitted in the following order:
     // Resume - stream started
     usersStream.on('resume', () => console.log(`stream started`));
+    usersStream.on('starting-stream', () => console.log(`starting stream custom event`));
     // Data - every peace of data pushed from the transoform callback
     usersStream.on('data', (chunk) => console.log(`data: ${JSON.stringify(chunk)}`));
     // End - this event is emitted when there is no more data to be consumed from the stream.
     // For a Readable stream, it signals that the stream has been completely read.
-    usersStream.on('end', () => console.log(`stream ended`));
+    usersStream.on('end', () => {
+        console.log(`stream ended`);
+        console.log(`processed chunks: ${processedChunks}`);
+        processedChunks = 0;
+    });
     // Finish - this event is emitted after the stream.end() method has been called
     // and all data has been flushed to the underlying system.
     // This is relevant for Writable streams.
