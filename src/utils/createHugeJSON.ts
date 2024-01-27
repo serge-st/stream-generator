@@ -1,11 +1,11 @@
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
-import { User } from './types';
+import { User } from '../common/types';
 
 export type TestUser = Pick<User, 'id' | 'first_name'>;
 
-const file = fs.createWriteStream('./huge.json');
-const NUMBER_OF_USERS = 1e6;
+const file = fs.createWriteStream('./medium.json');
+const NUMBER_OF_USERS = 10000;
 
 for (let i = 0; i <= NUMBER_OF_USERS; i++) {
     if (i === 0) {

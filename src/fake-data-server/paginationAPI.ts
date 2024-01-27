@@ -1,5 +1,5 @@
-import { TestUser } from './createHugeJSON';
-import { UsersResponse } from './types';
+import { TestUser } from '../utils/createHugeJSON';
+import { UsersResponse } from '../common/types';
 
 type TestUsersResponse = Omit<UsersResponse, 'data'> & {
     data: TestUser[];

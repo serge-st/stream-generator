@@ -1,5 +1,5 @@
 import { Transform } from 'stream';
-import { User } from './types';
+import { User } from '../common/types';
 
 type TransformCallback = (error?: Error | null, data?: any) => void;
 

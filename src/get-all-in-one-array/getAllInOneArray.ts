@@ -1,6 +1,6 @@
 import { ServerResponse } from 'http';
 import { UserTransform } from './stream';
-import { getAllUsers } from './usersGenerator';
+import { getAllUsers } from '../common/usersGenerator';
 
 export async function getAllInOneArray(res: ServerResponse): Promise<void> {
     const usersStream = new UserTransform();

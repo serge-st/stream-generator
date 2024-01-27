@@ -1,17 +1,18 @@
 import { ServerResponse } from 'http';
 import { Transform } from 'stream';
-import { getAllUsers } from './usersGenerator';
-import { User } from './types';
+import { getAllUsers } from '../common/usersGenerator';
+import { User } from '../common/types';
 import { Transform as J2CTransform } from '@json2csv/node';
 import { Script } from 'vm';
+import { progressAPI } from '../progress-api/progressAPI'
 
 export async function getAll(res: ServerResponse) {
     const code = `(data) => {
         data.first_name = data.first_name.toUpperCase();
         data.group_id = data.id;
-        if (!!data?.iid?.length) {
-            let res = data.iid.map(iid => ({
-                id: iid,
+        if (!!data?.pointers?.length) {
+            let res = data.pointers.map(pointer => ({
+                id: pointer,
                 first_name: data.first_name.toUpperCase(),
                 group_id: data.id
             }));
@@ -22,19 +23,19 @@ export async function getAll(res: ServerResponse) {
     const script = new Script(`(${code})(data)`);
 
     const highWaterMark = 200;
-    let processedChunks = 0;
 
     const wait = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     const usersStream = new Transform({
         objectMode: true,
         highWaterMark,
+        // TODO try to implement some actual async logic here
         async transform(chunk: User[], _enc, callback) {
             // You can emit custom events from the stream
             // and then listen to them in the main thread with stream.on('starting-stream', () => console.log('starting stream'))
-            if (processedChunks === 0) this.emit('starting-stream')
+            if (progressAPI.chunksParsed === 0) this.emit('starting-stream')
             await wait(1000);
-            console.log('transforming chunk')
+            console.log('transforming chunk', progressAPI.chunksParsed + 1)
             try {
                 chunk.forEach(user => {
                     const result = script.runInNewContext({ data: user });
@@ -44,13 +45,15 @@ export async function getAll(res: ServerResponse) {
                         this.push(result);
                     }
                 });
-                processedChunks++;
+                progressAPI.increment();
                 callback()
             } catch (error) {
                 callback(error as Error);
             }
         },
     });
+
+
 
     // * All events are usually emitted in the following order:
     // Resume - stream started
@@ -62,8 +65,8 @@ export async function getAll(res: ServerResponse) {
     // For a Readable stream, it signals that the stream has been completely read.
     usersStream.on('end', () => {
         console.log(`stream ended`);
-        console.log(`processed chunks: ${processedChunks}`);
-        processedChunks = 0;
+        console.log(`processed chunks: ${progressAPI.chunksParsed}`);
+        progressAPI.reset();
     });
     // Finish - this event is emitted after the stream.end() method has been called
     // and all data has been flushed to the underlying system.
@@ -75,6 +78,17 @@ export async function getAll(res: ServerResponse) {
     usersStream.on('close', () => console.log(`stream closed`));
     // Error - this event is emitted whenever an error is passed to stream callback as first argument.
     usersStream.on('error', (error: unknown) => console.log(`error: ${error}`));
+    // Pause - this event is emitted when the consumer of the stream stopped reading data from the stream.
+    usersStream.on('pause', () => {
+        console.log(`stream paused`);
+        // .destroy() method is used to close the stream and cleanup any underlying resources.
+        usersStream.destroy();
+        progressAPI.reset();
+    });
+    // usersStream.on('readable', () => console.log(`stream readable`));
+    usersStream.on('drain', () => console.log(`stream drained`));
+    usersStream.on('pipe', () => console.log(`stream piped`));
+    usersStream.on('unpipe', () => console.log(`stream unpiped`));
 
     const parser = new J2CTransform({ header: true }, {}, { objectMode: true });
     usersStream.pipe(parser).pipe(res);
