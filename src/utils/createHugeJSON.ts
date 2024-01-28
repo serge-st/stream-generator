@@ -2,7 +2,7 @@ import fs from 'fs';
 import { v4 as uuid } from 'uuid';
 import { User } from '../common/types';
 
-export type TestUser = Pick<User, 'id' | 'first_name'>;
+export type TestUser = Pick<User, 'id' | 'first_name' | 'comment'>;
 
 const file = fs.createWriteStream('./medium.json');
 const NUMBER_OF_USERS = 10000;
@@ -14,7 +14,8 @@ for (let i = 0; i <= NUMBER_OF_USERS; i++) {
 
     const user: TestUser = {
         id: i + 1,
-        first_name: uuid()
+        first_name: uuid(),
+        comment: '',
     };
 
     if (i === NUMBER_OF_USERS - 1) {

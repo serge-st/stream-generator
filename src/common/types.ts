@@ -4,6 +4,7 @@ export type User = {
     first_name: string;
     last_name: string;
     avatar: string;
+    comment?: string;
 }
 
 export type UsersResponse = {

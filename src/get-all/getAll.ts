@@ -35,16 +35,35 @@ export async function getAll(res: ServerResponse) {
             // and then listen to them in the main thread with stream.on('starting-stream', () => console.log('starting stream'))
             if (progressAPI.chunksParsed === 0) this.emit('starting-stream')
             await wait(1000);
-            console.log('transforming chunk', progressAPI.chunksParsed + 1)
             try {
-                chunk.forEach(user => {
+                const usersWithComments: any[] = []
+
+                for (const user of chunk) {
+                    const startId = 25;
+                    const endId = 185;
+
+                    if (user.id >= startId && user.id <= endId) {
+                        usersWithComments.push(user)
+                    }
+                }
+
+                const comments = await Promise.all(usersWithComments.map(async user => {
+                    const resp = await fetch(`https://jsonplaceholder.typicode.com/comments?id=${user.id}`)
+                    return resp.json()
+                }));
+
+                for (const user of chunk) {
+                    comments.flat().forEach((comment: any) => {
+                        if (comment.id === user.id) user.comment = comment.name;
+                    });
+
                     const result = script.runInNewContext({ data: user });
                     if (result.constructor.name === 'Array') {
                         result.forEach((item: any) => this.push(item));
                     } else {
                         this.push(result);
                     }
-                });
+                }
                 progressAPI.increment();
                 callback()
             } catch (error) {
@@ -52,8 +71,6 @@ export async function getAll(res: ServerResponse) {
             }
         },
     });
-
-
 
     // * All events are usually emitted in the following order:
     // Resume - stream started
@@ -64,9 +81,8 @@ export async function getAll(res: ServerResponse) {
     // End - this event is emitted when there is no more data to be consumed from the stream.
     // For a Readable stream, it signals that the stream has been completely read.
     usersStream.on('end', () => {
-        console.log(`stream ended`);
-        console.log(`processed chunks: ${progressAPI.chunksParsed}`);
-        progressAPI.reset();
+        console.log(`stream ended`)
+
     });
     // Finish - this event is emitted after the stream.end() method has been called
     // and all data has been flushed to the underlying system.
@@ -75,12 +91,17 @@ export async function getAll(res: ServerResponse) {
     usersStream.on('finish', () => console.log(`stream finished`));
     // Close - this event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed. 
     // The event indicates that no more events will be emitted, and no further computation will occur.
-    usersStream.on('close', () => console.log(`stream closed`));
+    usersStream.on('close', () => {
+        console.log(`stream closed`);
+
+        progressAPI.reset();
+    });
     // Error - this event is emitted whenever an error is passed to stream callback as first argument.
     usersStream.on('error', (error: unknown) => console.log(`error: ${error}`));
     // Pause - this event is emitted when the consumer of the stream stopped reading data from the stream.
     usersStream.on('pause', () => {
         console.log(`stream paused`);
+        console.log(`processed chunks: ${progressAPI.chunksParsed}`);
         // .destroy() method is used to close the stream and cleanup any underlying resources.
         usersStream.destroy();
         progressAPI.reset();
