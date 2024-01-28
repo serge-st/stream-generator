@@ -34,7 +34,7 @@ export async function getAll(res: ServerResponse) {
             // You can emit custom events from the stream
             // and then listen to them in the main thread with stream.on('starting-stream', () => console.log('starting stream'))
             if (progressAPI.chunksParsed === 0) this.emit('starting-stream')
-            await wait(1000);
+            // await wait(1000);
             try {
                 const usersWithComments: any[] = []
 
@@ -103,6 +103,8 @@ export async function getAll(res: ServerResponse) {
         console.log(`stream paused`);
         console.log(`processed chunks: ${progressAPI.chunksParsed}`);
         // .destroy() method is used to close the stream and cleanup any underlying resources.
+        // TODO: process stream destruction in a different callback
+        // destroying the stream here can close it prematurely
         usersStream.destroy();
         progressAPI.reset();
     });
