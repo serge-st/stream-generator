@@ -82,25 +82,22 @@ export async function getAll(res: ServerResponse) {
     // For a Readable stream, it signals that the stream has been completely read.
     usersStream.on('end', () => {
         console.log(`stream ended`)
-
     });
     // Finish - this event is emitted after the stream.end() method has been called
     // and all data has been flushed to the underlying system.
     // This is relevant for Writable streams.
     // It signals that all the data has been supplied to the stream (using the write() method) and the stream is done writing it.
     usersStream.on('finish', () => console.log(`stream finished`));
-    // Close - this event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed. 
-    // The event indicates that no more events will be emitted, and no further computation will occur.
-    usersStream.on('close', () => {
-        console.log(`stream closed`);
-
-        progressAPI.reset();
-    });
     // Error - this event is emitted whenever an error is passed to stream callback as first argument.
     usersStream.on('error', (error: unknown) => console.log(`error: ${error}`));
     // Pause - this event is emitted when the consumer of the stream stopped reading data from the stream.
     usersStream.on('pause', () => {
         console.log(`stream paused`);
+    });
+    // Close - this event is emitted when the stream and any of its underlying resources (a file descriptor, for example) have been closed. 
+    // The event indicates that no more events will be emitted, and no further computation will occur.
+    usersStream.on('close', () => {
+        console.log(`stream closed`);
         console.log(`processed chunks: ${progressAPI.chunksParsed}`);
         // .destroy() method is used to close the stream and cleanup any underlying resources.
         // TODO: process stream destruction in a different callback
@@ -108,7 +105,14 @@ export async function getAll(res: ServerResponse) {
         usersStream.destroy();
         progressAPI.reset();
     });
-    // usersStream.on('readable', () => console.log(`stream readable`));
+    // Readable - event is emitted when there is data available to be read from the stream, or when the stream has ended
+    // usersStream.on('readable', () => {
+    //     console.log(`stream readable`);
+    //     let chunk;
+    //     while (null !== (chunk = usersStream.read())) {
+    //         console.log(`Received ${JSON.stringify(chunk)} `);
+    //     }
+    // });
     usersStream.on('drain', () => console.log(`stream drained`));
     usersStream.on('pipe', () => console.log(`stream piped`));
     usersStream.on('unpipe', () => console.log(`stream unpiped`));
