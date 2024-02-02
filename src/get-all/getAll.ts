@@ -5,6 +5,7 @@ import { User } from '../common/types';
 import { Transform as J2CTransform } from '@json2csv/node';
 import { Script } from 'vm';
 import { progressAPI } from '../progress-api/progressAPI'
+import { pipeline } from 'stream/promises';
 
 export async function getAll(res: ServerResponse) {
     const code = `(data) => {
@@ -118,7 +119,20 @@ export async function getAll(res: ServerResponse) {
     usersStream.on('unpipe', () => console.log(`stream unpiped`));
 
     const parser = new J2CTransform({ header: true }, {}, { objectMode: true });
-    usersStream.pipe(parser).pipe(res);
+
+    const ac = new AbortController();
+
+    const signal = ac.signal;
+
+    // setImmediate(() => ac.abort());
+
+    // * The pipeline function is used to pipe a series of streams together and then destroy all of them if one of them emits an error.
+    // * The pipeline function returns a promise that resolves when the pipeline is fully done.
+    // * Probably this is the way to get more control over the stream and handle errors than:
+    // * usersStream.pipe(parser).pipe(res);
+    pipeline(usersStream, parser, res, { signal })
+
+
 
     const users = getAllUsers();
 
