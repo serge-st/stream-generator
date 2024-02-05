@@ -58,6 +58,10 @@ export async function getAll(res: ServerResponse) {
                         if (comment.id === user.id) user.comment = comment.name;
                     });
 
+                    if (user.id === 76) {
+                        throw new Error('User 76 is not allowed');
+                    }
+
                     const result = script.runInNewContext({ data: user });
                     if (result.constructor.name === 'Array') {
                         result.forEach((item: any) => this.push(item));
@@ -90,7 +94,9 @@ export async function getAll(res: ServerResponse) {
     // It signals that all the data has been supplied to the stream (using the write() method) and the stream is done writing it.
     usersStream.on('finish', () => console.log(`stream finished`));
     // Error - this event is emitted whenever an error is passed to stream callback as first argument.
-    usersStream.on('error', (error: unknown) => console.log(`error: ${error}`));
+    usersStream.on('error', (error: unknown) => {
+        console.log(`error: ${error}`);
+    });
     // Pause - this event is emitted when the consumer of the stream stopped reading data from the stream.
     usersStream.on('pause', () => {
         console.log(`stream paused`);
@@ -101,7 +107,6 @@ export async function getAll(res: ServerResponse) {
         console.log(`stream closed`);
         console.log(`processed chunks: ${progressAPI.chunksParsed}`);
         // .destroy() method is used to close the stream and cleanup any underlying resources.
-        // TODO: process stream destruction in a different callback
         // destroying the stream here can close it prematurely
         usersStream.destroy();
         progressAPI.reset();
@@ -126,13 +131,18 @@ export async function getAll(res: ServerResponse) {
 
     // setImmediate(() => ac.abort());
 
+    // * To use an AbortSignal, pass it inside an options object, as the last argument. When the signal is aborted, destroy will be called on the underlying pipeline, with an AbortError.
+    usersStream.on('error', (error: unknown) => {
+        ac.abort();
+    });
+
     // * The pipeline function is used to pipe a series of streams together and then destroy all of them if one of them emits an error.
     // * The pipeline function returns a promise that resolves when the pipeline is fully done.
     // * Probably this is the way to get more control over the stream and handle errors than:
     // * usersStream.pipe(parser).pipe(res);
-    pipeline(usersStream, parser, res, { signal })
-
-
+    pipeline(usersStream, parser, res, { signal }).catch((error) => {
+        console.log(`pipeline error: ${error}`);
+    });
 
     const users = getAllUsers();
 
