@@ -1,5 +1,5 @@
 import { ServerResponse } from 'http';
-import { Transform } from 'stream';
+import { PassThrough, Transform } from 'stream';
 import { getAllUsers } from '../common/usersGenerator';
 import { User } from '../common/types';
 import { Transform as J2CTransform } from '@json2csv/node';
@@ -58,9 +58,9 @@ export async function getAll(res: ServerResponse) {
                         if (comment.id === user.id) user.comment = comment.name;
                     });
 
-                    if (user.id === 76) {
-                        throw new Error('User 76 is not allowed');
-                    }
+                    // if (user.id === 76) {
+                    //     throw new Error('User 76 is not allowed');
+                    // }
 
                     const result = script.runInNewContext({ data: user });
                     if (result.constructor.name === 'Array') {
@@ -83,6 +83,7 @@ export async function getAll(res: ServerResponse) {
     usersStream.on('starting-stream', () => console.log(`starting stream custom event`));
     // Data - every peace of data pushed from the transoform callback
     usersStream.on('data', (chunk) => console.log(`data: ${JSON.stringify(chunk)}`));
+
     // End - this event is emitted when there is no more data to be consumed from the stream.
     // For a Readable stream, it signals that the stream has been completely read.
     usersStream.on('end', () => {
@@ -125,6 +126,9 @@ export async function getAll(res: ServerResponse) {
 
     const parser = new J2CTransform({ header: true }, {}, { objectMode: true });
 
+    parser.on('data', (chunk) => console.log(`parsed data: ${JSON.stringify(chunk)}`));
+
+
     const ac = new AbortController();
 
     const signal = ac.signal;
@@ -140,26 +144,37 @@ export async function getAll(res: ServerResponse) {
     // * The pipeline function returns a promise that resolves when the pipeline is fully done.
     // * Probably this is the way to get more control over the stream and handle errors than:
     // * usersStream.pipe(parser).pipe(res);
-    pipeline(usersStream, parser, res, { signal }).catch((error) => {
-        console.log(`pipeline error: ${error}`);
-    });
+    // pipeline(usersStream, parser, res, { signal }).catch((error) => {
+    //     console.log(`pipeline error: ${error}`);
+    // });
 
-    const users = getAllUsers();
+    // const users = getAllUsers();
 
-    let waitingForDrain = false;
-    let shouldContinue = true;
-    for await (const chunk of users) {
-        shouldContinue = usersStream.write(chunk);
-        if (!shouldContinue && !waitingForDrain) {
-            waitingForDrain = true;
-            console.log('waiting for drain'); // prints out only when highWaterMark is 1
-            await new Promise<void>(resolve => usersStream.once('drain', () => {
-                waitingForDrain = false;
-                console.log('drained'); // prints out only when highWaterMark is 1
-                resolve();
-            }));
-        }
-    }
+    // let waitingForDrain = false;
+    // let shouldContinue = true;
+    // for await (const chunk of users) {
+    //     shouldContinue = usersStream.write(chunk);
+    //     if (!shouldContinue && !waitingForDrain) {
+    //         waitingForDrain = true;
+    //         console.log('waiting for drain'); // prints out only when highWaterMark is 1
+    //         await new Promise<void>(resolve => usersStream.once('drain', () => {
+    //             waitingForDrain = false;
+    //             console.log('drained'); // prints out only when highWaterMark is 1
+    //             resolve();
+    //         }));
+    //     }
+    // }
+    const passThrough = new PassThrough();
+    passThrough.on('data', (chunk) => console.log(`passThrough data: ${Buffer.byteLength(chunk)}`));
 
-    usersStream.end();
+    await pipeline(getAllUsers(), usersStream, parser, passThrough, res)
+
+    // async function* (source) {
+    //     for await (const users of source) {
+    //       // Assuming `users` is an array of user objects
+    //       yield JSON.stringify(users) + "\n"; // Add newline for readability in the file
+    //     }
+    //   },
+
+    // usersStream.end();
 }
